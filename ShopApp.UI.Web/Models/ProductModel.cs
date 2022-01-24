@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace ShopApp.Entity
+namespace ShopApp.UI.Web.Models
 {
-    public class Product
+    public class ProductModel
     {
         public int ProductId { get; set; }
         public string Name { get; set; }
@@ -14,7 +12,5 @@ namespace ShopApp.Entity
         public bool IsApproved { get; set; }
         public string Url { get; set; }
         public bool IsHome { get; set; }
-
-        public List<ProductCategory> ProductCategory { get; set; }
     }
 }

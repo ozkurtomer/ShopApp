@@ -6,7 +6,11 @@ using System.Text;
 
 namespace ShopApp.DataAccess.Concrete.EntityFramework
 {
-    public class EFCategoryRepository : EFGenericRepository<Category,ShopContext>, ICategoryRepository
+    public class EFCategoryRepository : EFGenericRepository<Category, ShopContext>, ICategoryRepository
     {
+        public List<Category> GetPopularCategories()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

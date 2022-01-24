@@ -35,6 +35,31 @@ namespace ShopApp.Business.Concrete
             return _productRepository.GetById(id);
         }
 
+        public int GetCountByCategory(string categoryName)
+        {
+            return _productRepository.GetCountByCategory(categoryName);
+        }
+
+        public List<Product> GetHomePageProducts()
+        {
+            return _productRepository.GetHomePageProducts();
+        }
+
+        public Product GetProductDetails(string productName)
+        {
+            return _productRepository.GetProductDetails(productName);
+        }
+
+        public List<Product> GetProductsByCategory(string categoryName,int page, int pageSize)
+        {
+            return _productRepository.GetProductsByCategory(categoryName, page, pageSize);
+        }
+
+        public List<Product> GetSearchResult(string searchText)
+        {
+            return _productRepository.GetSearchResult(searchText);
+        }
+
         public void Update(Product entity)
         {
             _productRepository.Update(entity);

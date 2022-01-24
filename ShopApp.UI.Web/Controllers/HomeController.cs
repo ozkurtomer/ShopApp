@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using ShopApp.Business.Abstract;
+using ShopApp.UI.Web.ViewModels;
 
 namespace shopapp.webui.Controllers
 {
@@ -19,7 +20,7 @@ namespace shopapp.webui.Controllers
         {
             var productListViewModel = new ProductListViewModel()
             {
-                Products = _productService.GetAll()
+                Products = _productService.GetHomePageProducts()
             };
 
             return View(productListViewModel);
