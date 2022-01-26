@@ -13,10 +13,12 @@ namespace ShopApp.Business.Abstract
         List<Product> GetProductsByCategory(string categoryName, int page, int pageSize);
         List<Product> GetHomePageProducts();
         List<Product> GetSearchResult(string searchText);
+        Product GetByIdWithCategories(int id);
 
         int GetCountByCategory(string categoryName);
         void Add(Product entity);
         void Update(Product entity);
         void Delete(Product entity);
+        void Update(Product entity, int[] categoryIds);
     }
 }

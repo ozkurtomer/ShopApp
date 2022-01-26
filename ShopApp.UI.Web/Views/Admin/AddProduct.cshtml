@@ -6,6 +6,8 @@
 
 <form asp-controller="Admin" asp-action="AddProduct" method="post">
 
+    <div asp-validation-summary="All" class="text-danger"></div>
+
     <div class="form-group row">
 
         <label asp-for="Name" class="col-md-2 col-form-label">Name</label>
@@ -13,6 +15,7 @@
         <div class="col-sm-10">
 
             <input class="form-control" asp-for="Name">
+            <span class="text-danger" asp-validation-for="Name"></span>
 
         </div>
 
@@ -25,6 +28,7 @@
         <div class="col-sm-10">
 
             <input class="form-control" asp-for="Url">
+            <span class="text-danger" asp-validation-for="Url"></span>
 
         </div>
 
@@ -37,6 +41,7 @@
         <div class="col-sm-10">
 
             <textarea class="form-control" asp-for="Description"></textarea>
+            <span class="text-danger" asp-validation-for="Description"></span>
 
         </div>
 
@@ -49,6 +54,7 @@
         <div class="col-sm-10">
 
             <input class="form-control" asp-for="ImageUrl">
+            <span class="text-danger" asp-validation-for="ImageUrl"></span>
 
         </div>
 
@@ -61,6 +67,7 @@
         <div class="col-sm-10">
 
             <input class="form-control" asp-for="Price">
+            <span class="text-danger" asp-validation-for="Price"></span>
 
         </div>
 
@@ -77,3 +84,9 @@
     </div>
 
 </form>
+
+@section Scripts
+{
+    <script src="/modules/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="/modules/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+}

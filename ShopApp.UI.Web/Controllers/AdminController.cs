@@ -1,25 +1,42 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ShopApp.Business.Abstract;
 using ShopApp.Entity;
 using ShopApp.UI.Web.Models;
 using ShopApp.UI.Web.ViewModels;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ShopApp.UI.Web.Controllers
 {
+    [Authorize]
     public class AdminController : Controller
     {
         private IProductService _productService;
-        public AdminController(IProductService productService)
+        private ICategoryService _categoryService;
+
+        public AdminController(IProductService productService, ICategoryService categoryService)
         {
             _productService = productService;
+            _categoryService = categoryService;
         }
-
         public IActionResult ProductList()
         {
             return View(new ProductListViewModel()
             {
                 Products = _productService.GetAll()
+            });
+        }
+
+        public IActionResult CategoryList()
+        {
+            return View(new CategoryListViewModel()
+            {
+                Categories = _categoryService.GetAll()
             });
         }
 
@@ -30,100 +47,240 @@ namespace ShopApp.UI.Web.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddProduct(ProductModel productModel)
+        public IActionResult AddProduct(ProductModel model)
         {
-            _productService.Add(new Product
+            if (ModelState.IsValid)
             {
-                Description = productModel.Description,
-                ImageUrl = productModel.ImageUrl,
-                IsApproved = productModel.IsApproved,
-                IsHome = productModel.IsHome,
-                Name = productModel.Name,
-                Price = productModel.Price,
-                ProductId = productModel.ProductId,
-                Url = productModel.Url,
-            });
+                var entity = new Product()
+                {
+                    Name = model.Name,
+                    Url = model.Url,
+                    Price = model.Price,
+                    Description = model.Description,
+                    ImageUrl = model.ImageUrl
+                };
 
-            TempData["message"] = JsonConvert.SerializeObject(new AlertMessage
-            {
-                Messages = $"{productModel.Name} isimli ürün eklendi",
-                AlertType = "success"
-            });
+                _productService.Add(entity);
 
-            return RedirectToAction("ProductList", "Admin");
+                var msg = new AlertMessage()
+                {
+                    Messages = $"{entity.Name} isimli ürün eklendi.",
+                    AlertType = "success"
+                };
+
+                TempData["message"] = JsonConvert.SerializeObject(msg);
+
+                return RedirectToAction("ProductList");
+            }
+            return View(model);
         }
 
         [HttpGet]
-        public IActionResult UpdateProduct(int? productId)
+        public IActionResult AddCategory()
         {
-            if (productId == null)
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult AddCategory(CategoryModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var entity = new Category()
+                {
+                    Name = model.Name,
+                    Url = model.Url
+                };
+
+                _categoryService.Add(entity);
+
+                var msg = new AlertMessage()
+                {
+                    Messages = $"{entity.Name} isimli category eklendi.",
+                    AlertType = "success"
+                };
+
+                TempData["message"] = JsonConvert.SerializeObject(msg);
+
+                return RedirectToAction("CategoryList");
+            }
+            return View(model);
+        }
+
+
+        [HttpGet]
+        public IActionResult UpdateProduct(int? id)
+        {
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var entity = _productService.GetById((int)productId);
+            var entity = _productService.GetByIdWithCategories((int)id);
 
             if (entity == null)
             {
                 return NotFound();
             }
 
-            return View(new ProductModel
+            var model = new ProductModel()
             {
                 ProductId = entity.ProductId,
-                Description = entity.Description,
-                IsApproved = entity.IsApproved,
-                ImageUrl = entity.ImageUrl,
-                IsHome = entity.IsHome,
                 Name = entity.Name,
-                Price = entity.Price,
                 Url = entity.Url,
-            });
+                Price = entity.Price,
+                ImageUrl = entity.ImageUrl,
+                Description = entity.Description,
+                SelectedCategories = entity.ProductCategory.Select(x => x.Category).ToList()
+            };
+
+            ViewBag.Categories = _categoryService.GetAll();
+
+            return View(model);
         }
 
         [HttpPost]
-        public IActionResult UpdateProduct(ProductModel productModel)
+        public async Task<IActionResult> UpdateProduct(ProductModel model, int[] categoryIds, IFormFile file)
         {
-            var entity = _productService.GetById(productModel.ProductId);
+            if (ModelState.IsValid)
+            {
+                var entity = _productService.GetById(model.ProductId);
+                if (entity == null)
+                {
+                    return NotFound();
+                }
+                entity.Name = model.Name;
+                entity.Price = model.Price;
+                entity.Url = model.Url;
+                entity.Description = model.Description;
+
+                if (file != null)
+                {
+                    var extension = Path.GetExtension(file.FileName);
+                    var randomName = string.Format($"{Guid.NewGuid()}{extension}");
+                    entity.ImageUrl = randomName;
+                    var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot\\img", randomName);
+
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+                }
+
+                _productService.Update(entity, categoryIds);
+
+                var msg = new AlertMessage()
+                {
+                    Messages = $"{entity.Name} isimli ürün güncellendi.",
+                    AlertType = "success"
+                };
+
+                TempData["message"] = JsonConvert.SerializeObject(msg);
+
+                return RedirectToAction("ProductList");
+            }
+            ViewBag.Categories = _categoryService.GetAll();
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult UpdateCategory(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var entity = _categoryService.GetByIdWithProducts((int)id);
+
             if (entity == null)
             {
                 return NotFound();
             }
-            entity.Description = productModel.Description;
-            entity.ImageUrl = productModel.ImageUrl;
-            entity.Name = productModel.Name;
-            entity.Price = productModel.Price;
-            entity.Url = productModel.Url;
 
-            _productService.Update(entity);
-
-            TempData["message"] = JsonConvert.SerializeObject(new AlertMessage
+            var model = new CategoryModel()
             {
-                Messages = $"{entity.Name} isimli ürün güncellendi",
-                AlertType = "success"
-            });
-
-            return RedirectToAction("ProductList", "Admin");
+                CategoryId = entity.CategoryId,
+                Name = entity.Name,
+                Url = entity.Url,
+                Products = entity.ProductCategory.Select(x => x.Product).ToList()
+            };
+            return View(model);
         }
 
         [HttpPost]
+        public IActionResult UpdateCategory(CategoryModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var entity = _categoryService.GetById(model.CategoryId);
+                if (entity == null)
+                {
+                    return NotFound();
+                }
+                entity.Name = model.Name;
+                entity.Url = model.Url;
+
+                _categoryService.Update(entity);
+
+                var msg = new AlertMessage()
+                {
+                    Messages = $"{entity.Name} isimli category güncellendi.",
+                    AlertType = "success"
+                };
+
+                TempData["message"] = JsonConvert.SerializeObject(msg);
+
+                return RedirectToAction("CategoryList");
+            }
+            return View(model);
+        }
+
         public IActionResult DeleteProduct(int productId)
         {
             var entity = _productService.GetById(productId);
-            if (entity == null)
+
+            if (entity != null)
             {
-                return NotFound();
+                _productService.Delete(entity);
             }
 
-            _productService.Delete(entity);
-
-            TempData["message"] = JsonConvert.SerializeObject(new AlertMessage
+            var msg = new AlertMessage()
             {
-                Messages = $"{entity.Name} isimli ürün silindi",
+                Messages = $"{entity.Name} isimli ürün silindi.",
                 AlertType = "danger"
-            });
+            };
 
-            return RedirectToAction("ProductList", "Admin");
+            TempData["message"] = JsonConvert.SerializeObject(msg);
+
+            return RedirectToAction("ProductList");
+        }
+
+        public IActionResult DeleteCategory(int categoryId)
+        {
+            var entity = _categoryService.GetById(categoryId);
+
+            if (entity != null)
+            {
+                _categoryService.Delete(entity);
+            }
+
+            var msg = new AlertMessage()
+            {
+                Messages = $"{entity.Name} isimli category silindi.",
+                AlertType = "danger"
+            };
+
+            TempData["message"] = JsonConvert.SerializeObject(msg);
+
+            return RedirectToAction("CategoryList");
+        }
+
+        [HttpPost]
+        public IActionResult DeleteFromCategory(int productId, int categoryId)
+        {
+            _categoryService.DeleteFromCategory(productId, categoryId);
+            return Redirect($"/admin/categories/{categoryId}");
         }
     }
 }

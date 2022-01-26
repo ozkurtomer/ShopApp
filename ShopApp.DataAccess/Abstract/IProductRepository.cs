@@ -12,6 +12,8 @@ namespace ShopApp.DataAccess.Abstract
         List<Product> GetTop5Products();
         List<Product> GetProductsByCategory(string categoryName, int page, int pageSize);
         List<Product> GetHomePageProducts();
+        Product GetByIdWithCategories(int id);
         int GetCountByCategory(string categoryName);
+        void Update(Product entity, int[] categoryIds);
     }
 }

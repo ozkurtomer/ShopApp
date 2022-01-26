@@ -84,5 +84,42 @@ namespace ShopApp.DataAccess.Concrete.EntityFramework
                 return context.Products.ToList();
             }
         }
+
+        public Product GetByIdWithCategories(int id)
+        {
+            using(var context = new ShopContext())
+            {
+                return context.Products
+                              .Where(x => x.ProductId == id)
+                              .Include(x => x.ProductCategory)
+                              .ThenInclude(x => x.Category)
+                              .FirstOrDefault();
+            }
+        }
+
+        public void Update(Product entity, int[] categoryIds)
+        {
+            using (var context = new ShopContext())
+            {
+                var product = context.Products
+                                     .Include(x=>x.ProductCategory)
+                                     .FirstOrDefault(x=>x.ProductId == entity.ProductId);
+                if (product != null)
+                {
+                    product.Name = entity.Name;
+                    product.ImageUrl = entity.ImageUrl;
+                    product.Description = entity.Description;
+                    product.Price = entity.Price;
+
+                    product.ProductCategory = categoryIds.Select(x => new ProductCategory
+                    {
+                        ProductId = entity.ProductId,
+                        CategoryId = x
+                    }).ToList();
+
+                    context.SaveChanges();
+                }
+            }
+        }
     }
 }
