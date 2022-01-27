@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using ShopApp.Business.Abstract;
 using ShopApp.Entity;
+using ShopApp.UI.Web.Extensions;
 using ShopApp.UI.Web.Models;
 using ShopApp.UI.Web.ViewModels;
 using System;
@@ -245,14 +246,12 @@ namespace ShopApp.UI.Web.Controllers
                 _productService.Delete(entity);
             }
 
-            var msg = new AlertMessage()
+            TempData.Put("message", new AlertMessage
             {
-                Messages = $"{entity.Name} isimli ürün silindi.",
-                AlertType = "danger"
-            };
-
-            TempData["message"] = JsonConvert.SerializeObject(msg);
-
+                Title = "Ürün Silme",
+                Messages = $"{ entity.Name } isimli ürün silindi.",
+                AlertType = "success"
+            });
             return RedirectToAction("ProductList");
         }
 
@@ -282,5 +281,8 @@ namespace ShopApp.UI.Web.Controllers
             _categoryService.DeleteFromCategory(productId, categoryId);
             return Redirect($"/admin/categories/{categoryId}");
         }
+
+
+
     }
 }

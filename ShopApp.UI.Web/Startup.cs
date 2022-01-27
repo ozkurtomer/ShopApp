@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -15,16 +16,23 @@ using ShopApp.Business.Abstract;
 using ShopApp.Business.Concrete;
 using ShopApp.DataAccess.Abstract;
 using ShopApp.DataAccess.Concrete.EntityFramework;
+using ShopApp.UI.Web.EmailService;
 using ShopApp.UI.Web.Identity;
 
 namespace shopapp.webui
 {
     public class Startup
     {
+        private IConfiguration _configuration;
+        public Startup(IConfiguration configoration)
+        {
+            _configuration = configoration;
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<ApplicationContext>(options => options.UseSqlite(@"Data Source = D:\Projects\ShopApp\ShopApp.UI.Web\shopDb;"));
-            services.AddIdentity<User,IdentityRole>()
+            services.AddIdentity<User, IdentityRole>()
                     .AddEntityFrameworkStores<ApplicationContext>()
                     .AddDefaultTokenProviders();
             services.Configure<IdentityOptions>(options =>
@@ -40,7 +48,7 @@ namespace shopapp.webui
                 options.Lockout.AllowedForNewUsers = true;
 
                 options.User.RequireUniqueEmail = true;
-                options.SignIn.RequireConfirmedEmail = false;
+                options.SignIn.RequireConfirmedEmail = true;
                 options.SignIn.RequireConfirmedPhoneNumber = false;
             });
 
@@ -54,7 +62,8 @@ namespace shopapp.webui
                 options.Cookie = new CookieBuilder()
                 {
                     HttpOnly = true,
-                    Name = ".ShopApp.Security.Cookie"
+                    Name = ".ShopApp.Security.Cookie",
+                    SameSite = SameSiteMode.Strict
                 };
             });
 
@@ -63,6 +72,15 @@ namespace shopapp.webui
 
             services.AddScoped<ICategoryRepository, EFCategoryRepository>();
             services.AddScoped<ICategoryService, CategoryManager>();
+
+            services.AddScoped<IEmailSender, SmtpEmailSender>(i =>
+                                                                new SmtpEmailSender(
+                                                                    _configuration["EmailSender:Host"],
+                                                                    _configuration.GetValue<int>("EmailSender:Port"),
+                                                                    _configuration.GetValue<bool>("EmailSender:EnableSSL"),
+                                                                    _configuration["EmailSender:UserName"],
+                                                                    _configuration["EmailSender:Password"]
+                                                                ));
 
             services.AddControllersWithViews();
         }
